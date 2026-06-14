@@ -1,127 +1,212 @@
 package options;
 
-class GameplaySettingsSubState extends BaseOptionsMenu
+import flixel.FlxG;
+import flixel.FlxSubState;
+import flixel.FlxSprite;
+import flixel.text.FlxText;
+import flixel.math.FlxMath;
+import flixel.group.FlxGroup.FlxTypedGroup;
+import flixel.util.FlxColor;
+
+import backend.ClientPrefs;
+import backend.Paths;
+
+class GameplaySettingsSubState extends FlxSubState
 {
+	var options:Array<String> = [
+		'downScroll',
+		'middleScroll',
+		'opponentStrums',
+		'ghostTapping',
+		'autoPause',
+		'noReset',
+		'guitarHeroSustains',
+		'hitsoundVolume'
+	];
+
+	var names:Array<String> = [
+		'Downscroll',
+		'Middlescroll',
+		'Opponent Notes',
+		'Ghost Tapping',
+		'Auto Pause',
+		'Disable Reset',
+		'Sustains as One Note',
+		'Hitsound Volume'
+	];
+
+	var types:Array<String> = [
+		'bool',
+		'bool',
+		'bool',
+		'bool',
+		'bool',
+		'bool',
+		'bool',
+		'int'
+	];
+
+	var desc:Array<String> = [
+		'Notes go downward instead of upward.',
+		'Centers the note lanes.',
+		'Hides opponent notes.',
+		'Prevents accidental misses from key tapping.',
+		'Automatically pauses game when unfocused.',
+		'Disables reset button.',
+		'Sustains behave as single hits.',
+		'Controls hitsound volume.'
+	];
+
+	var grp:FlxTypedGroup<FlxSprite>;
+	var txt:FlxTypedGroup<FlxText>;
+
+	var curSelected:Int = 0;
+
+	var title:FlxText;
+	var hint:FlxText;
+
 	public function new()
 	{
-		title = Language.getPhrase('gameplay_menu', 'Gameplay Settings');
-		rpcTitle = 'Gameplay Settings Menu'; //for Discord Rich Presence
-
-		//I'd suggest using "Downscroll" as an example for making your own option since it is the simplest here
-		var option:Option = new Option('Downscroll', //Name
-			'If checked, notes go Down instead of Up, simple enough.', //Description
-			'downScroll', //Save data variable name
-			BOOL); //Variable type
-		addOption(option);
-
-		var option:Option = new Option('Middlescroll',
-			'If checked, your notes get centered.',
-			'middleScroll',
-			BOOL);
-		addOption(option);
-
-		var option:Option = new Option('Opponent Notes',
-			'If unchecked, opponent notes get hidden.',
-			'opponentStrums',
-			BOOL);
-		addOption(option);
-
-		var option:Option = new Option('Ghost Tapping',
-			"If checked, you won't get misses from pressing keys\nwhile there are no notes able to be hit.",
-			'ghostTapping',
-			BOOL);
-		addOption(option);
-		
-		var option:Option = new Option('Auto Pause',
-			"If checked, the game automatically pauses if the screen isn't on focus.",
-			'autoPause',
-			BOOL);
-		addOption(option);
-		option.onChange = onChangeAutoPause;
-
-		var option:Option = new Option('Disable Reset Button',
-			"If checked, pressing Reset won't do anything.",
-			'noReset',
-			BOOL);
-		addOption(option);
-
-		var option:Option = new Option('Sustains as One Note',
-			"If checked, Hold Notes can't be pressed if you miss,\nand count as a single Hit/Miss.\nUncheck this if you prefer the old Input System.",
-			'guitarHeroSustains',
-			BOOL);
-		addOption(option);
-
-		var option:Option = new Option('Hitsound Volume',
-			'Funny notes does \"Tick!\" when you hit them.',
-			'hitsoundVolume',
-			PERCENT);
-		addOption(option);
-		option.scrollSpeed = 1.6;
-		option.minValue = 0.0;
-		option.maxValue = 1;
-		option.changeValue = 0.1;
-		option.decimals = 1;
-		option.onChange = onChangeHitsoundVolume;
-
-		var option:Option = new Option('Rating Offset',
-			'Changes how late/early you have to hit for a "Sick!"\nHigher values mean you have to hit later.',
-			'ratingOffset',
-			INT);
-		option.displayFormat = '%vms';
-		option.scrollSpeed = 20;
-		option.minValue = -30;
-		option.maxValue = 30;
-		addOption(option);
-
-		var option:Option = new Option('Sick! Hit Window',
-			'Changes the amount of time you have\nfor hitting a "Sick!" in milliseconds.',
-			'sickWindow',
-			FLOAT);
-		option.displayFormat = '%vms';
-		option.scrollSpeed = 15;
-		option.minValue = 15.0;
-		option.maxValue = 45.0;
-		option.changeValue = 0.1;
-		addOption(option);
-
-		var option:Option = new Option('Good Hit Window',
-			'Changes the amount of time you have\nfor hitting a "Good" in milliseconds.',
-			'goodWindow',
-			FLOAT);
-		option.displayFormat = '%vms';
-		option.scrollSpeed = 30;
-		option.minValue = 15.0;
-		option.maxValue = 90.0;
-		option.changeValue = 0.1;
-		addOption(option);
-
-		var option:Option = new Option('Bad Hit Window',
-			'Changes the amount of time you have\nfor hitting a "Bad" in milliseconds.',
-			'badWindow',
-			FLOAT);
-		option.displayFormat = '%vms';
-		option.scrollSpeed = 60;
-		option.minValue = 15.0;
-		option.maxValue = 135.0;
-		option.changeValue = 0.1;
-		addOption(option);
-
-		var option:Option = new Option('Safe Frames',
-			'Changes how many frames you have for\nhitting a note earlier or late.',
-			'safeFrames',
-			FLOAT);
-		option.scrollSpeed = 5;
-		option.minValue = 2;
-		option.maxValue = 10;
-		option.changeValue = 0.1;
-		addOption(option);
-
 		super();
 	}
 
-	function onChangeHitsoundVolume()
-		FlxG.sound.play(Paths.sound('hitsound'), ClientPrefs.data.hitsoundVolume);
+	override function create()
+	{
+		super.create();
 
-	function onChangeAutoPause()
-		FlxG.autoPause = ClientPrefs.data.autoPause;
+		add(new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xFF11151D));
+
+		title = new FlxText(50, 30, 600, "GAMEPLAY SETTINGS", 24);
+		title.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE);
+		add(title);
+
+		hint = new FlxText(50, 80, 800, "", 16);
+		hint.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE);
+		add(hint);
+
+		grp = new FlxTypedGroup<FlxSprite>();
+		txt = new FlxTypedGroup<FlxText>();
+		add(grp);
+		add(txt);
+
+		var startY = 130;
+		var spacing = 55;
+
+		for (i in 0...options.length)
+		{
+			var box = new FlxSprite(320, startY + i * spacing)
+				.makeGraphic(650, 45, 0xFF232A38);
+			box.ID = i;
+			grp.add(box);
+
+			var t = new FlxText(330, startY + i * spacing + 12, 650, "", 18);
+			t.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE);
+			txt.add(t);
+		}
+
+		updateUI();
+	}
+
+	function isBool(i:Int):Bool
+	{
+		return types[i] == "bool";
+	}
+
+	function getValue(i:Int):String
+	{
+		var key = options[i];
+
+		if (isBool(i))
+		{
+			var val:Bool = Reflect.field(ClientPrefs.data, key);
+			return names[i].toUpperCase() + " : " + (val ? "ON" : "OFF");
+		}
+		else
+		{
+			var val:Float = Reflect.field(ClientPrefs.data, key);
+			return names[i].toUpperCase() + " : " + val;
+		}
+	}
+
+	function toggle()
+	{
+		var key = options[curSelected];
+
+		if (isBool(curSelected))
+		{
+			var val:Bool = Reflect.field(ClientPrefs.data, key);
+			Reflect.setField(ClientPrefs.data, key, !val);
+		}
+		else
+		{
+			var val:Float = Reflect.field(ClientPrefs.data, key);
+			Reflect.setField(ClientPrefs.data, key, val + 1);
+		}
+
+		applySetting(key);
+		ClientPrefs.saveSettings();
+		updateUI();
+	}
+
+	function applySetting(key:String)
+	{
+		switch (key)
+		{
+			case "autoPause":
+				FlxG.autoPause = ClientPrefs.data.autoPause;
+
+			case "hitsoundVolume":
+				FlxG.sound.play(Paths.sound('hitsound'), ClientPrefs.data.hitsoundVolume);
+
+			default:
+		}
+	}
+
+	function updateUI()
+	{
+		for (i in 0...grp.length)
+		{
+			var box = grp.members[i];
+			var t = txt.members[i];
+
+			if (box == null || t == null) continue;
+
+			t.text = getValue(i);
+
+			if (i == curSelected)
+			{
+				box.color = 0xFF6D7A9A;
+				t.alpha = 1;
+				hint.text = desc[i];
+			}
+			else
+			{
+				box.color = 0xFF232A38;
+				t.alpha = 0.6;
+			}
+		}
+	}
+
+	function changeSelection(dir:Int)
+	{
+		curSelected = FlxMath.wrap(curSelected + dir, 0, options.length - 1);
+		updateUI();
+	}
+
+	override function update(elapsed:Float)
+	{
+		super.update(elapsed);
+
+		if (FlxG.keys.justPressed.UP)
+			changeSelection(-1);
+
+		if (FlxG.keys.justPressed.DOWN)
+			changeSelection(1);
+
+		if (FlxG.keys.justPressed.ENTER)
+			toggle();
+
+		if (FlxG.keys.justPressed.ESCAPE)
+			close();
+	}
 }
